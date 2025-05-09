@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">balenbisi</string>
+    <string name="station_name">Station Name</string>
+    <string name="free_bikes_10">Free Bikes: 10</string>
+</resources>

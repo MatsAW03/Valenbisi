@@ -1,0 +1,26 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvBikeStations"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />  <!-- ⬅ Permite que los botones sean visibles -->
+
+    <Button
+        android:id="@+id/btnSortByName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ordenar por Nombre" />
+
+    <Button
+        android:id="@+id/btnSortByBikes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ordenar por Bicicletas" />
+
+</LinearLayout>
+

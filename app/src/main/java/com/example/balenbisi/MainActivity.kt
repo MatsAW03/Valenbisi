@@ -1,62 +1,93 @@
 package com.example.balenbisi
 
 import android.os.Bundle
-import android.widget.Button
+import android.view.Menu
+import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.InputStream
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var bikeStations: MutableList<BikeStation>
+    private lateinit var adapter: BikeStationAdapter
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val bikeStations = getData()
+        // Set up toolbar
+        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
+
+        bikeStations = getData()
 
         val recyclerView: RecyclerView = findViewById(R.id.rvBikeStations)
         recyclerView.layoutManager = LinearLayoutManager(this)
-        val adapter = BikeStationAdapter(bikeStations)
+        adapter = BikeStationAdapter(bikeStations)
         recyclerView.adapter = adapter
-
-        // Encontrar los botones
-        val btnSortByName: Button = findViewById(R.id.btnSortByName)
-        val btnSortByBikes: Button = findViewById(R.id.btnSortByBikes)
-
-        // Listener para ordenar por nombre
-        btnSortByName.setOnClickListener {
-            bikeStations.sortBy { it.name }  // Ordena alfabéticamente por nombre
-            adapter.notifyDataSetChanged()
-        }
-
-        // Listener para ordenar por bicis disponibles
-        btnSortByBikes.setOnClickListener {
-            bikeStations.sortByDescending { it.free_bikes }  // Ordena por número de bicis (descendente)
-            adapter.notifyDataSetChanged()
-        }
     }
 
-    private fun getData(): MutableList<BikeStation> {  // ⬅ Cambiar List por MutableList
+    private fun getData(): MutableList<BikeStation> {
         val inputStream: InputStream = resources.openRawResource(R.raw.valenbisi)
         val jsonText = inputStream.bufferedReader().use { it.readText() }
         val jsonArray = JSONArray(jsonText)
 
-        val bikeStationsList = mutableListOf<BikeStation>()  // ⬅ MutableList en vez de List
+        val bikeStationsList = mutableListOf<BikeStation>()
 
         for (i in 0 until jsonArray.length()) {
-            val station: JSONObject = jsonArray.getJSONObject(i)
-            val number = station.getInt("number")
-            val name = station.getString("address")
-            val freeBikes = station.getInt("available")
+            try {
+                val station: JSONObject = jsonArray.getJSONObject(i)
+                val number = station.getInt("number")
+                val name = station.getString("address")
+                val freeBikes = station.getInt("available")
 
-            bikeStationsList.add(BikeStation(number, name, freeBikes))
+                var latitude = 0.0
+                var longitude = 0.0
+
+                try {
+                    if (station.has("position")) {
+                        val position = station.getJSONObject("position")
+                        if (position.has("lat")) latitude = position.getDouble("lat")
+                        if (position.has("lng")) longitude = position.getDouble("lng")
+                    } else if (station.has("latitude") && station.has("longitude")) {
+                        latitude = station.getDouble("latitude")
+                        longitude = station.getDouble("longitude")
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+                bikeStationsList.add(BikeStation(number, name, freeBikes, latitude, longitude))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
-
         return bikeStationsList
     }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.menu_sort_name -> {
+                bikeStations.sortBy { it.name }
+                adapter.notifyDataSetChanged()
+                true
+            }
+            R.id.menu_sort_bikes -> {
+                bikeStations.sortByDescending { it.free_bikes }
+                adapter.notifyDataSetChanged()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
 }
-
-
-

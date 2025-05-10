@@ -38,9 +38,15 @@ class BikeStationAdapter(private val bikeStations: List<BikeStation>) :
 
         // Set click listener for the item
         holder.itemView.setOnClickListener {
-            val intent = Intent(holder.itemView.context, BikeStationDetailActivity::class.java)
-            intent.putExtra("BIKE_STATION", station) // Pass the selected BikeStation object
-            holder.itemView.context.startActivity(intent)
+            try {
+                val intent = Intent(holder.itemView.context, BikeStationDetailActivity::class.java)
+                // Make sure station is serializable with all fields properly initialized
+                intent.putExtra("BIKE_STATION", station)
+                holder.itemView.context.startActivity(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // If you have more robust error handling, you could show a Toast here
+            }
         }
     }
 

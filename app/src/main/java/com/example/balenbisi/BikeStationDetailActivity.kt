@@ -9,6 +9,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
@@ -19,12 +20,23 @@ class BikeStationDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_bike_station_detail)
+
+        // Set up toolbar (matches main activity style)
+        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true) // Show back button
+        supportActionBar?.setDisplayShowTitleEnabled(false) // Disable default title
+
+        // Custom title like main activity
+        toolbar.findViewById<TextView>(R.id.toolbar_title).text = "Station Details"
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
 
+        // Retrieve station data
         try {
             @Suppress("DEPRECATION")
             station = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -35,12 +47,12 @@ class BikeStationDetailActivity : AppCompatActivity() {
                     ?: throw Exception("No station data found")
             }
 
-            title = station.name
+            // Update UI
             findViewById<TextView>(R.id.tvDetailStationName).text = station.name
             findViewById<TextView>(R.id.tvDetailFreeBikes).text = "Bicicletas disponibles: ${station.free_bikes}"
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(this, "Error cargando datos de la estación", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Error loading station data", Toast.LENGTH_SHORT).show()
             finish()
         }
     }
@@ -52,12 +64,13 @@ class BikeStationDetailActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.menu_open_maps -> {
-                openStationInMaps()
+            android.R.id.home -> {
+                // Handle back button press
+                onBackPressed()
                 true
             }
-            R.id.menu_report_incident -> {
-                Toast.makeText(this, "Funcionalidad disponible próximamente", Toast.LENGTH_SHORT).show()
+            R.id.menu_open_map -> {
+                openStationInMaps()
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -67,12 +80,15 @@ class BikeStationDetailActivity : AppCompatActivity() {
     private fun openStationInMaps() {
         try {
             val geoUri = if (station.latitude != 0.0 && station.longitude != 0.0) {
-                "geo:${station.latitude},${station.longitude}?q=${Uri.encode(station.name)}"
+                Uri.parse("geo:${station.latitude},${station.longitude}?q=${Uri.encode(station.name)}")
             } else {
-                "geo:0,0?q=${Uri.encode(station.name)}"
+                Uri.parse("geo:0,0?q=${Uri.encode(station.name)}")
             }
 
-            val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse(geoUri))
+            val mapIntent = Intent(Intent.ACTION_VIEW, geoUri).apply {
+                setPackage("com.google.android.apps.maps")
+            }
+
             if (mapIntent.resolveActivity(packageManager) != null) {
                 startActivity(mapIntent)
             } else {
@@ -84,7 +100,7 @@ class BikeStationDetailActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(this, "Error al abrir el mapa", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Error opening maps", Toast.LENGTH_SHORT).show()
         }
     }
 }

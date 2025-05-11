@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+
     <item
-        android:id="@+id/menu_open_maps"
-        android:title="Open in Maps"
-        app:showAsAction="never"/>
-    <item
-        android:id="@+id/menu_report_incident"
-        android:title="Report Incident"
-        app:showAsAction="never"/>
+        android:id="@+id/menu_actions"
+        android:title="Actions"
+        android:icon="@android:drawable/ic_menu_sort_by_size"
+        app:showAsAction="always">
+        <menu>
+            <item
+                android:id="@+id/menu_open_map"
+                android:title="Open Map"
+                android:icon="@android:drawable/ic_menu_mapmode"/>
+        </menu>
+    </item>
+
 </menu>

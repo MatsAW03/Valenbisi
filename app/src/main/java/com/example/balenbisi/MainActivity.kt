@@ -3,82 +3,94 @@ package com.example.balenbisi
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
-import org.json.JSONArray
-import org.json.JSONObject
-import java.io.InputStream
+import com.example.balenbisi.network.RetrofitInstance
+import kotlinx.coroutines.Dispatchers
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.FileNotFoundException
 
 class MainActivity : AppCompatActivity() {
     private lateinit var bikeStations: MutableList<BikeStation>
     private lateinit var adapter: BikeStationAdapter
-
-    // Add Room database instance (new code)
     private lateinit var database: AppDatabase
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Initialize Room database (new code)
         database = Room.databaseBuilder(
             applicationContext,
             AppDatabase::class.java,
             "valenbisi-db"
         ).build()
 
-        // Set up toolbar
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
-        bikeStations = getData()
-
+        bikeStations = mutableListOf()
         val recyclerView: RecyclerView = findViewById(R.id.rvBikeStations)
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = BikeStationAdapter(bikeStations)
         recyclerView.adapter = adapter
+
+        fetchBikeStations()
     }
 
-    private fun getData(): MutableList<BikeStation> {
-        val inputStream: InputStream = resources.openRawResource(R.raw.valenbisi)
-        val jsonText = inputStream.bufferedReader().use { it.readText() }
-        val jsonArray = JSONArray(jsonText)
-
-        val bikeStationsList = mutableListOf<BikeStation>()
-
-        for (i in 0 until jsonArray.length()) {
+    private fun fetchBikeStations() {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val station: JSONObject = jsonArray.getJSONObject(i)
-                val number = station.getInt("number")
-                val name = station.getString("address")
-                val freeBikes = station.getInt("available")
-
-                var latitude = 0.0
-                var longitude = 0.0
-
-                try {
-                    if (station.has("position")) {
-                        val position = station.getJSONObject("position")
-                        if (position.has("lat")) latitude = position.getDouble("lat")
-                        if (position.has("lng")) longitude = position.getDouble("lng")
-                    } else if (station.has("latitude") && station.has("longitude")) {
-                        latitude = station.getDouble("latitude")
-                        longitude = station.getDouble("longitude")
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                val response = RetrofitInstance.api.getBikeStations()
+                val stations = response.results.map { station ->
+                    BikeStation(
+                        number = station.number,
+                        name = station.address,
+                        free_bikes = station.available,
+                        latitude = station.position?.lat ?: 0.0,
+                        longitude = station.position?.lon ?: 0.0
+                    )
                 }
 
-                bikeStationsList.add(BikeStation(number, name, freeBikes, latitude, longitude))
+                withContext(Dispatchers.Main) {
+                    bikeStations.clear()
+                    bikeStations.addAll(stations)
+                    adapter.notifyDataSetChanged()
+                }
             } catch (e: Exception) {
-                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    // Show error message
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Error fetching data: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    // No longer trying to load from local data
+                    // Just show an empty list or add some dummy data if needed
+                    bikeStations.clear()
+
+                    // Optionally add a dummy item to indicate error state
+                    bikeStations.add(
+                        BikeStation(
+                            number = -1,
+                            name = "No data available. Pull to refresh.",
+                            free_bikes = 0,
+                            latitude = 0.0,
+                            longitude = 0.0
+                        )
+                    )
+
+                    adapter.notifyDataSetChanged()
+                }
             }
         }
-        return bikeStationsList
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

@@ -12,22 +12,34 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.room.Room
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlinx.coroutines.launch
 
 class BikeStationDetailActivity : AppCompatActivity() {
     private lateinit var station: BikeStation
+    private lateinit var database: AppDatabase
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_bike_station_detail)
 
-        // Set up toolbar (matches main activity style)
+        // Initialize Room database
+        database = Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java,
+            "valenbisi-db"
+        ).build()
+
+        // Set up toolbar
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true) // Show back button
-        supportActionBar?.setDisplayShowTitleEnabled(false) // Disable default title
-
-        // Custom title like main activity
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
         toolbar.findViewById<TextView>(R.id.toolbar_title).text = "Station Details"
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -50,10 +62,52 @@ class BikeStationDetailActivity : AppCompatActivity() {
             // Update UI
             findViewById<TextView>(R.id.tvDetailStationName).text = station.name
             findViewById<TextView>(R.id.tvDetailFreeBikes).text = "Bicicletas disponibles: ${station.free_bikes}"
+
+            // Set up FAB click listener
+            findViewById<FloatingActionButton>(R.id.fabAddIncident).setOnClickListener {
+                val intent = Intent(this, ReportIncidentActivity::class.java).apply {
+                    putExtra("STATION_ID", station.number)
+                    putExtra("STATION_NAME", station.name) // Add station name
+                }
+                startActivity(intent)
+            }
+
+            // Load and display incidents
+            loadIncidents()
+
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Error loading station data", Toast.LENGTH_SHORT).show()
             finish()
+        }
+    }
+
+    private fun loadIncidents() {
+        lifecycleScope.launch {
+            try {
+                val incidents = database.incidentDao().getIncidentsByStation(station.number)
+                runOnUiThread {
+                    val recyclerView = findViewById<RecyclerView>(R.id.rvIncidents)
+                    recyclerView.layoutManager = LinearLayoutManager(this@BikeStationDetailActivity)
+                    recyclerView.adapter = IncidentAdapter(incidents)
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    Toast.makeText(
+                        this@BikeStationDetailActivity,
+                        "Error loading incidents",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh incidents when returning from ReportIncidentActivity
+        if (::station.isInitialized) {
+            loadIncidents()
         }
     }
 
@@ -65,12 +119,20 @@ class BikeStationDetailActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             android.R.id.home -> {
-                // Handle back button press
-                onBackPressed()
+                onBackPressedDispatcher.onBackPressed()
                 true
             }
             R.id.menu_open_map -> {
                 openStationInMaps()
+                true
+            }
+            R.id.menu_report_incident -> {
+                // Reuse the same code as the FAB click
+                val intent = Intent(this, ReportIncidentActivity::class.java).apply {
+                    putExtra("STATION_ID", station.number)
+                    putExtra("STATION_NAME", station.name)
+                }
+                startActivity(intent)
                 true
             }
             else -> super.onOptionsItemSelected(item)

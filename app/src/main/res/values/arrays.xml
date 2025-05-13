@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="incident_statuses">
+        <item>Open</item>
+        <item>Processing</item>
+        <item>Closed</item>
+    </string-array>
+
+    <string-array name="incident_types">
+        <item>Mechanical</item>
+        <item>Electric</item>
+        <item>Painting</item>
+        <item>Masonry</item>
+    </string-array>
+</resources>

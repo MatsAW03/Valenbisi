@@ -12,6 +12,11 @@
                 android:id="@+id/menu_open_map"
                 android:title="Open Map"
                 android:icon="@android:drawable/ic_menu_mapmode"/>
+            <!-- Add this new item -->
+            <item
+                android:id="@+id/menu_report_incident"
+                android:title="Report Incident"
+                android:icon="@android:drawable/ic_menu_add"/>
         </menu>
     </item>
 

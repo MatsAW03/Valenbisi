@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.room.Room
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.InputStream
@@ -15,9 +16,19 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bikeStations: MutableList<BikeStation>
     private lateinit var adapter: BikeStationAdapter
 
+    // Add Room database instance (new code)
+    private lateinit var database: AppDatabase
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // Initialize Room database (new code)
+        database = Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java,
+            "valenbisi-db"
+        ).build()
 
         // Set up toolbar
         val toolbar: Toolbar = findViewById(R.id.toolbar)
